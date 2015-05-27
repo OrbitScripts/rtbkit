@@ -498,9 +498,16 @@ injectCampaignEvent(const string & label,
 
 void
 PostAuctionService::
+logAuction(std::shared_ptr< SubmittedAuctionEvent> event) {
+    // dummy
+}
+
+void
+PostAuctionService::
 doAuction(std::shared_ptr<SubmittedAuctionEvent> event)
 {
     stats.auctions++;
+    logAuction(event);
     if (forwarder) forwarder->forwardAuction(event);
     matcher->doAuction(std::move(event));
 }

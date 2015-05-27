@@ -258,6 +258,9 @@ private:
     void initMatcher(size_t shards);
     void initRestEndpoint();
 
+    /** Log a new auction that came in. */
+    virtual void logAuction(std::shared_ptr< SubmittedAuctionEvent> event);
+
     void doAuction(std::shared_ptr< SubmittedAuctionEvent> event);
     void doEvent(std::shared_ptr<PostAuctionEvent> event);
     void checkExpiredAuctions();
