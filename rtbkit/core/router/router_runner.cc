@@ -205,11 +205,13 @@ start()
 {
     slaveBanker->start();
     if (localBanker) localBanker->start();
-    router->start();
+    // router->start();
 
     // Start all exchanges
     for (auto & exchange: exchangeConfig)
         router->startExchange(exchange);
+
+    router->start();
 }
 
 void
