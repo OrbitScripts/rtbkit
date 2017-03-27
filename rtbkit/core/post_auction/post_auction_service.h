@@ -224,7 +224,8 @@ struct PostAuctionService : public ServiceBase, public MonitorProvider
     /************************************************************************/
 
     void forwardAuctions(const std::string& uri);
-    
+    AnalyticsPublisher analyticsPublisher;
+
 private:
 
     std::string getProviderClass() const;
@@ -300,8 +301,6 @@ private:
     AgentBridge bridge;
 
     ZmqMessageRouter router;
-
-    AnalyticsPublisher analyticsPublisher;
 
     std::unique_ptr<RestServiceEndpoint> restEndpoint;
     std::unique_ptr<RestRequestRouter> restRouter;
