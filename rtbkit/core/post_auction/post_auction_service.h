@@ -225,6 +225,7 @@ struct PostAuctionService : public ServiceBase, public MonitorProvider
 
     void forwardAuctions(const std::string& uri);
     AnalyticsPublisher analyticsPublisher;
+    std::unique_ptr<Analytics> analytics;
 
 private:
 
@@ -294,7 +295,7 @@ private:
     TypedMessageSink<std::shared_ptr<SubmittedAuctionEvent> > auctions;
     TypedMessageSink<std::shared_ptr<PostAuctionEvent> > events;
 
-    std::unique_ptr<Analytics> analytics;
+
     ZmqNamedEndpoint endpoint;
 
     std::shared_ptr<BidderInterface> bidder;
