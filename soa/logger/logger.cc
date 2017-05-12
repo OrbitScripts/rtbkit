@@ -431,9 +431,9 @@ handleListenerMessage(std::vector<std::string> const & message)
     for (unsigned i = 1;  i < message.size();  ++i) {
         string const & strMessage = message[i];
         if (strMessage.find_first_of("\n\t\0\r") != string::npos) {
-            cerr << "warning: part " << i << " of message "
-                 << channel << " has illegal char: '"
-                 << strMessage << "'" << endl;
+//            cerr << "warning: part " << i << " of message "
+//                 << channel << " has illegal char: '"
+//                 << strMessage << "'" << endl;
         }
         if (i > 1) toLog += '\t';
         toLog += strMessage;
@@ -599,9 +599,9 @@ runLogThread(ACE_Semaphore & sem)
 
             for (unsigned i = 1;  i < message.size();  ++i) {
                 if (message[i].find_first_of("\n\t\0\r") != string::npos) {
-                    cerr << "warning: part " << i << " of message "
-                         << message[0] << " has illegal char: '"
-                         << message[i] << "'" << endl;
+//                    cerr << "warning: part " << i << " of message "
+//                         << message[0] << " has illegal char: '"
+//                         << message[i] << "'" << endl;
                 }
                 if (i > 1) toLog += '\t';
                 toLog += message[i];
