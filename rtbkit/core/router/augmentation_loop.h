@@ -171,6 +171,7 @@ private:
     void doAugmentation(std::shared_ptr<Entry>&& entry);
 
     void recordStats();
+    void normalizeStats();
 
     void checkExpiries();
 

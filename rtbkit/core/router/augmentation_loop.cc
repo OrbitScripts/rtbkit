@@ -109,6 +109,9 @@ init()
 
     addPeriodic("AugmentationLoop::recordStats", 0.977,
                 [=] (int) { recordStats(); });
+
+    addPeriodic("AugmentationLoop::normalizeStats", 10,
+                [=] (int) { normalizeStats(); });
 }
 
 void
@@ -174,16 +177,46 @@ handleAugmentorMessage(const std::vector<std::string> & message)
 
 void
 AugmentationLoop::
+normalizeStats()
+{
+    for (auto it = augmentors.begin(), end = augmentors.end();
+         it != end;  ++it)
+    {
+        for (const auto& instance : it->second->instances) {
+            if (instance->numInFlight < 0) {
+                instance->numInFlight = 0;
+            }
+        }
+    }
+}
+
+void
+AugmentationLoop::
 recordStats()
 {
     for (auto it = augmentors.begin(), end = augmentors.end();
          it != end;  ++it)
     {
+        std::cerr << "----------------------------------------------------" << std::endl;
+        std::cerr << "  " << it->first << " augmentor: " << std::endl;
+        std::cerr << "----------------------------------------------------" << std::endl;
+
         size_t inFlights = 0;
-        for (const auto& instance : it->second->instances)
-            inFlights += instance->numInFlight;
+        for (const auto& instance : it->second->instances) {
+            auto inFlight = instance->numInFlight;
+            if (inFlight < 0) {
+                inFlight = 0;
+            }
+
+            std::cerr << "  " << instance->addr << ": " << inFlight << " in flight" << std::endl;
+            inFlights += inFlight;
+        }
 
         recordLevel(inFlights, "augmentor.%s.numInFlight", it->first);
+
+        std::cerr << "----------------------------------------------------" << std::endl;
+        std::cerr << "  Total in flights: " << inFlights << std::endl;
+        std::cerr << "----------------------------------------------------" << std::endl;
     }
 }
 
@@ -348,19 +381,13 @@ AugmentationLoop::
 pickInstance(AugmentorInfo& aug)
 {
     std::shared_ptr<AugmentorInstanceInfo> instance;
-    int minInFlights = std::numeric_limits<int>::max();
 
-    stringstream ss;
+    if (aug.instances.size() > 0) {
+        std::random_device random_device;
+        std::mt19937 engine{random_device()};
+        std::uniform_int_distribution<int> dist(0, aug.instances.size() - 1);
 
-    for (auto it = aug.instances.begin(), end = aug.instances.end();
-         it != end; ++it)
-    {
-        auto & ptr = *it;
-        if (ptr->numInFlight >= minInFlights) continue;
-        if (ptr->numInFlight >= ptr->maxInFlight) continue;
-
-        instance = ptr;
-        minInFlights = ptr->numInFlight;
+        instance = aug.instances[dist(engine)];
     }
 
     if (instance) instance->numInFlight++;
