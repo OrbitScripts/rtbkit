@@ -554,7 +554,7 @@ sendResponse()
                           "ms",
                           { 90, 95, 98, 99 });
 
-            if (random() % 1000 == 0) {
+            if (random() % 100000 == 0) {
                 this->transport().closeWhenHandlerFinished();
             }
             else {
