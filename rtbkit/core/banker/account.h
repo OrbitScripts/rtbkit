@@ -584,6 +584,10 @@ struct ShadowAccount {
         if (!balance.hasAvailable(amount))
             return false;  // no budget balance
 
+        std::cerr << "==============================" << std::endl;
+        std::cerr << "Attach bid: " << item << " with amount: " << amount.toString() << std::endl;
+        std::cerr << "==============================" << std::endl;
+
         attachBid(item, amount);
 
         balance -= amount;
@@ -609,6 +613,17 @@ struct ShadowAccount {
     Amount detachBid(const std::string & item)
     {
         checkInvariants();
+
+        std::cerr << "=================================" << std::endl;
+        std::cerr << "Find commitments: " << item << std::endl;
+        std::cerr << "=================================" << std::endl;
+
+        std::cerr << "Commitments: " << std::endl;
+
+        for (auto c : commitments) {
+            std::cerr << "Name: " << c.first << std::endl;
+        }
+        std::cerr << "=================================" << std::endl;
 
         auto cit = commitments.find(item);
         if (cit == commitments.end())
@@ -1513,6 +1528,11 @@ struct ShadowAccounts {
                       Amount amount)
     {
         Guard guard(lock);
+
+        std::cerr << "=============================" << std::endl;
+        std::cerr << "Authorize bid for: " << accountKey.toString() << " with amount: " << amount.toString() << std::endl;
+        std::cerr << "=============================" << std::endl;
+
         return (outOfSyncAccounts.count(accountKey) == 0
                 && getAccountImpl(accountKey).authorizeBid(item, amount));
     }
@@ -1523,6 +1543,11 @@ struct ShadowAccounts {
                    const LineItems & lineItems)
     {
         Guard guard(lock);
+
+        std::cerr << "=============================" << std::endl;
+        std::cerr << "Commit bid for: " << accountKey.toString() << " with amount: " << amountPaid.toString() << std::endl;
+        std::cerr << "=============================" << std::endl;
+
         return getAccountImpl(accountKey).commitBid(item, amountPaid, lineItems);
     }
 
@@ -1530,6 +1555,11 @@ struct ShadowAccounts {
                    const std::string & item)
     {
         Guard guard(lock);
+
+        std::cerr << "=============================" << std::endl;
+        std::cerr << "Cancel bid for: " << accountKey.toString() << std::endl;
+        std::cerr << "=============================" << std::endl;
+
         return getAccountImpl(accountKey).cancelBid(item);
     }
     
@@ -1538,6 +1568,11 @@ struct ShadowAccounts {
                      const LineItems & lineItems)
     {
         Guard guard(lock);
+
+        std::cerr << "=============================" << std::endl;
+        std::cerr << "Force win bid for: " << accountKey.toString() << " with amount: " << amountPaid.toString() << std::endl;
+        std::cerr << "=============================" << std::endl;
+
         return getAccountImpl(accountKey).forceWinBid(amountPaid, lineItems);
     }
 
@@ -1548,6 +1583,11 @@ struct ShadowAccounts {
                            const LineItems & lineItems)
     {
         Guard guard(lock);
+
+        std::cerr << "=============================" << std::endl;
+        std::cerr << "Commit detached bid for: " << accountKey.toString() << " with amount: " << amountPaid.toString() << std::endl;
+        std::cerr << "=============================" << std::endl;
+
         return getAccountImpl(accountKey)
             .commitDetachedBid(amountAuthorized, amountPaid, lineItems);
     }
@@ -1563,6 +1603,11 @@ struct ShadowAccounts {
                      const std::string & item)
     {
         Guard guard(lock);
+
+        std::cerr << "=============================" << std::endl;
+        std::cerr << "Detach bid for: " << accountKey.toString() << std::endl;
+        std::cerr << "=============================" << std::endl;
+
         return getAccountImpl(accountKey).detachBid(item);
     }
 
@@ -1571,6 +1616,11 @@ struct ShadowAccounts {
                    Amount amountAuthorized)
     {
         Guard guard(lock);
+
+        std::cerr << "=============================" << std::endl;
+        std::cerr << "Attach bid for: " << accountKey.toString() << std::endl;
+        std::cerr << "=============================" << std::endl;
+
         getAccountImpl(accountKey).attachBid(item, amountAuthorized);
     }
 

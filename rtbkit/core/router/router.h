@@ -71,6 +71,8 @@ struct AgentInfoEntry {
 struct AllAgentInfo : public std::vector<AgentInfoEntry> {
     std::unordered_map<std::string, int> agentIndex;
     std::unordered_map<AccountKey, std::vector<int> > accountIndex;
+    std::unordered_map<AccountKey, std::vector<int> > initialAccountIndex;
+    std::unordered_map<AccountKey, std::vector<int> > profitAccountIndex;
 };
 
 /*****************************************************************************/

@@ -221,6 +221,8 @@ toJson() const
             sources.append(dataSource);
     }
 
+    json["stage"] = stage;
+
     return json;
 }
 
@@ -252,21 +254,25 @@ fromJson(const std::string& raw)
 
             bool foundField = true;
             switch (fieldName[0]) {
-            case 'b':
-                if (fieldName == "bids")
-                    expectJsonArray(context, onDataSourceEntry);
+                case 'b':
+                    if (fieldName == "bids") {
+                        expectJsonArray(context, onDataSourceEntry);
+                    } else {
+                        foundField = false;
+                    }
+                    break;
 
-                else foundField = false;
-                break;
+                case 's':
+                    if (fieldName == "sources") {
+                        expectJsonArray(context, onBidEntry);
+                    } else if (fieldName == "stage") {
+                        result.stage = expectJsonNumber(context).uns;
+                    } else {
+                        foundField = false;
+                    }
+                    break;
 
-            case 's':
-                if (fieldName == "sources")
-                    expectJsonArray(context, onBidEntry);
-
-                else foundField = false;
-                break;
-
-            default: foundField = false;
+                default: foundField = false;
             }
 
             ExcCheck(foundField, "unknown bids field " + fieldName);

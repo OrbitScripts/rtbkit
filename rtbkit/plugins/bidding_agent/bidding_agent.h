@@ -95,7 +95,7 @@ struct BiddingAgent : public ServiceBase, public MessageLoop {
         bidding agent has changed.
 
         Note that bidding agent will remember the given configuration which will
-        be usedto answer any further configuration requests that are received.
+        be used to answer any further configuration requests that are received.
         This function is thread-safe and can be called at any time to change the
         bid request which will be received by the agent. Note that update are
         done asynchronously and changes might not take effect immediately.

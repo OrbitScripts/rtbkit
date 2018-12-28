@@ -297,12 +297,17 @@ struct AgentConfig {
 
     Json::Value toJson(bool includeCreatives = true) const;
 
-    AccountKey account;   ///< Who to bill this to
+    AccountKey account;              ///< Who to bill this to
 
-    uint64_t externalId;  ///< Simplifies id reconciliation with external systems
+    AccountKey initialBudgetAccount; ///< Initial budget account to bill
 
-    bool external;        ///< Forward bid request that have this configuration
-    bool test;            ///< Can't make real bids
+    AccountKey profitAccount;        ///< Profit-relative account to bill
+
+    uint64_t externalId;             ///< Simplifies id reconciliation with external systems
+
+    bool external;                   ///< Forward bid request that have this configuration
+
+    bool test;                       ///< Can't make real bids
     
     std::string roundRobinGroup;
     int roundRobinWeight;

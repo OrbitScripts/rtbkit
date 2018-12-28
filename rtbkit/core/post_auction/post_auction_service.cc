@@ -549,6 +549,11 @@ void
 PostAuctionService::
 doMatchedWinLoss(std::shared_ptr<MatchedWinLoss> event)
 {
+    std::cerr << "=============================" << std::endl;
+    std::cerr << "  Do Matched WinLoss " << std::endl;
+    std::cerr << "   For account: " << event->response.account.toString() << std::endl;
+    std::cerr << "=============================" << std::endl;
+
     if (event->type == MatchedWinLoss::Win || event->type == MatchedWinLoss::LateWin) {
         lastWinLoss = Date::now();
         stats.matchedWins++;
@@ -563,6 +568,17 @@ doMatchedWinLoss(std::shared_ptr<MatchedWinLoss> event)
     deliverEvent("bidResult." + event->typeString(), "doWinLossEvent", event->response.account,
         [&](const AgentConfigEntry& entry)
         {
+
+            std::cerr << "=============================" << std::endl;
+            std::cerr << "  Config Name: " << entry.name << std::endl;
+            std::cerr << std::endl;
+            std::cerr << "  Config Json: " << entry.config->toJson(false).toString() << std::endl;
+            std::cerr << std::endl;
+            std::cerr << "  Event Response: " << event->response.toJson().toString() << std::endl;
+            std::cerr << std::endl;
+            std::cerr << "  Event Request String: " << event->requestStrFormat << std::endl;
+            std::cerr << "=============================" << std::endl;
+
             bidder->sendWinLossMessage(entry.config, *event);
         });
 }
@@ -601,6 +617,10 @@ deliverEvent(const std::string& label, const std::string& eventType,
         sent = true;
     };
 
+    std::cerr << "===================" << std::endl;
+    std::cerr << "  Search Agent by account: " << account.toString() << std::endl;
+    std::cerr << "===================" << std::endl;
+
     configListener.forEachAccountAgent(account, onMatchingAgent);
 
     totalEvents++;
@@ -623,6 +643,11 @@ void
 PostAuctionService::
 doUnmatched(std::shared_ptr<UnmatchedEvent> event)
 {
+
+    std::cerr << "=============================" << std::endl;
+    std::cerr << "  Do Unmatched " << std::endl;
+    std::cerr << "=============================" << std::endl;
+
     stats.unmatchedEvents++;
     if (analytics) event->publish(*analytics);
     event->publish(analyticsPublisher);
@@ -637,6 +662,11 @@ void
 PostAuctionService::
 doError(std::shared_ptr<PostAuctionErrorEvent> error)
 {
+    std::cerr << "=============================" << std::endl;
+    std::cerr << "  Do Error " << std::endl;
+    std::cerr << "  Message: " << (*error).message << std::endl;
+    std::cerr << "=============================" << std::endl;
+
     stats.errors++;
     if (analytics) error->publish(*analytics);
     error->publish(analyticsPublisher);

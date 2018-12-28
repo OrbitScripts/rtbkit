@@ -1000,7 +1000,9 @@ handleAgentMessage(const std::vector<std::string> & message)
 {
     try {
         using namespace std;
-        //cerr << "got agent message " << message << endl;
+        cerr << "=============================================" << endl;
+        cerr << "got agent message " << message << endl;
+        cerr << "=============================================" << endl;
 
         if (message.size() < 2) {
             returnErrorResponse(message, "not enough message parts");
@@ -1958,6 +1960,12 @@ void
 Router::
 doBid(const std::vector<std::string> & message)
 {
+
+    cerr << "===================================" << endl;
+    cerr << "  Do bid" << endl;
+    cerr << "===================================" << endl;
+
+
     if (message.size() < 5 || message.size() > 6) {
         returnErrorResponse(message, "BID message has 4-5 parts");
         return;
@@ -1968,6 +1976,10 @@ doBid(const std::vector<std::string> & message)
     const string & agent = message[0];
     const string & biddata = message[3];
     const string & model = message[4];
+
+    cerr << "===================================" << endl;
+    cerr << "  Bid data  " << biddata << endl;
+    cerr << "===================================" << endl;
 
     WinCostModel wcm = WinCostModel::fromJson(model.empty() ? Json::Value() : Json::parse(model));
 
@@ -2007,6 +2019,10 @@ void
 Router::
 doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMessage)
 {
+    cerr << "===================================" << endl;
+    cerr << "  Do bid impl" << endl;
+    cerr << "===================================" << endl;
+
     Date dateGotBid = Date::now();
 
     if (failBid(bidsErrorRate)) {
@@ -2025,6 +2041,16 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
     }
 
     AuctionInfo & auctionInfo = it->second;
+
+    const auto& bids = message.bids;
+    const auto& agent = message.agents[0];
+    auto biddersIt = auctionInfo.bidders.find(agent);
+    auto & config = *biddersIt->second.agentConfig;
+
+    // for learning campaign there is a special account with balance based on a profit we had.
+    // it can be config.initialBudgetAccount or config.profitAccount depending on what budget has enough balance
+    // otherwise it will be equal to config.account as it was
+    auto biddingAccount = config.account;
 
     for (const auto &agent: message.agents) {
         if (!agents.count(agent)) {
@@ -2047,8 +2073,7 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
             returnErrorResponse(originalMessage, "agent wasn't bidding on this auction");
             return;
         }
-        auto & config = *biddersIt->second.agentConfig;
-        recordHit("accounts.%s.bids", config.account.toString('.'));
+        recordHit("accounts.%s.bids", biddingAccount.toString('.'));
     }
 
 
@@ -2058,13 +2083,9 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
 
     recordHit("bid");
 
-    const auto& agent = message.agents[0];
-    auto biddersIt = auctionInfo.bidders.find(agent);
-    auto & config = *biddersIt->second.agentConfig;
     AgentInfo & info = agents[agent];
     const auto& agentConfig = info.config;
 
-    const auto& bids = message.bids;
     auto bidsString = bids.toJson().toStringNoNewLine();
 
     BidInfo bidInfo(std::move(biddersIt->second));
@@ -2182,7 +2203,7 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
                 slowModePeriodicSpentReached = false;
                 // TODO Insure in router.cc (not router_runner) that
                 // maxBidPrice <= slowModeAuthorizedMoneyLimit
-                // Here we're garanteed that price.value >= slowModeAuthorizedMoneyLimit
+                // Here we're guaranteed that price.value >= slowModeAuthorizedMoneyLimit
                 accumulatedBidMoneyInThisPeriod = price.value;
 
                 recordHit("monitor.systemInSlowMode"); 
@@ -2196,7 +2217,7 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
                     slowModePeriodicSpentReached = true;
                     bidder->sendBidDroppedMessage(agentConfig, agent, auctionInfo.auction);
                     recordHit("slowMode.droppedBid");
-                    recordHit("accounts.%s.IGNORED", config.account.toString('.'));
+                    recordHit("accounts.%s.IGNORED", biddingAccount.toString('.'));
                 continue;
                 }
             }
@@ -2206,17 +2227,67 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
             slowModePeriodicSpentReached = false;
         }
 
-        if (!banker->authorizeBid(config.account, auctionKey, price) || failBid(budgetErrorRate))
-        {
-            ++info.stats->noBudget;
+        if (1 == bids.stage) {
 
-            bidder->sendNoBudgetMessage(agentConfig, agent, auctionInfo.auction);
+            cerr << "============================================" << endl;
+            cerr << "  Bids stage 1 handle  " << endl;
+            cerr << "============================================" << endl;
 
-            if (analytics) analytics->logNoBudgetMessage(agent, auctionId, bidsString, message.meta);
-            this->logMessageToAnalytics("NOBUDGET", agent, auctionId);
-            recordHit("accounts.%s.NOBUDGET", config.account.toString('.'));
-            continue;
+            // if we have a learning stage 1, we need to check two budgets
+            // 1. Check campaign initial budget
+            // 2. If initial budget is empty then try to use profit-relative budget
+            bool skip = true;
+            if (!failBid(budgetErrorRate)) {
+                biddingAccount = config.initialBudgetAccount;
+                cerr << "============================================" << endl;
+                cerr << "  Bidding account initial:  " << biddingAccount.toString() << endl;
+                cerr << "============================================" << endl;
+                if (banker->authorizeBid(config.initialBudgetAccount, auctionKey, price)) {
+                    skip = false;
+                } else {
+                    biddingAccount = config.profitAccount;
+                    cerr << "============================================" << endl;
+                    cerr << "  Bidding account profit:  " << biddingAccount.toString() << endl;
+                    cerr << "============================================" << endl;
+                    if (banker->authorizeBid(config.profitAccount, auctionKey, price)) {
+                        skip = false;
+                    }
+                }
+            }
+            if (skip) {
+                ++info.stats->noBudget;
+
+                bidder->sendNoBudgetMessage(agentConfig, agent, auctionInfo.auction);
+
+                if (analytics) analytics->logNoBudgetMessage(agent, auctionId, bidsString, message.meta);
+                this->logMessageToAnalytics("NOBUDGET", agent, auctionId);
+                recordHit("accounts.%s.NOBUDGET", biddingAccount.toString('.'));
+                continue;
+            }
+        } else {
+            // if we have learning stage other than 1, we have to use standard campaign budget
+            biddingAccount = config.account;
+
+            if (!banker->authorizeBid(biddingAccount, auctionKey, price) || failBid(budgetErrorRate)) {
+                ++info.stats->noBudget;
+
+                bidder->sendNoBudgetMessage(agentConfig, agent, auctionInfo.auction);
+
+                if (analytics) analytics->logNoBudgetMessage(agent, auctionId, bidsString, message.meta);
+                this->logMessageToAnalytics("NOBUDGET", agent, auctionId);
+                recordHit("accounts.%s.NOBUDGET", biddingAccount.toString('.'));
+                continue;
+            }
         }
+
+
+        cerr << "========================================" << endl;
+        cerr << "Bidding account: " << biddingAccount << endl;
+        cerr << "Bids stage: " << bids.stage << endl;
+        cerr << "========================================" << endl;
+
+
+        bid.account = biddingAccount; // set particular account for a bid
         
         recordCount(bid.price.value, "cummulatedBidPrice");
         recordCount(price.value, "cummulatedAuthorizedPrice");
@@ -2236,7 +2307,7 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
         Auction::Response response(
                 Auction::Price(bid.price, bid.priority),
                 creative.id,
-                config.account,
+                biddingAccount,
                 config.test,
                 agent,
                 bids,
@@ -2250,6 +2321,11 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
 
         Auction::WinLoss localResult
             = auctionInfo.auction->setResponse(spotIndex, response);
+
+
+        cerr << "============================================" << endl;
+        cerr << "  Local auction result:  " << localResult.value() << endl;
+        cerr << "============================================" << endl;
 
         ++numValidBids;
 
@@ -2284,24 +2360,24 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
             else if (localResult.val == Auction::WinLoss::INVALID)
                 ++info.stats->invalid;
 
-            banker->cancelBid(config.account, auctionKey);
+            banker->cancelBid(biddingAccount, auctionKey);
 
             BidStatus status;
             switch (localResult.val) {
             case Auction::WinLoss::LOSS:
                 status = BS_LOSS;
                 bidder->sendLossMessage(agentConfig, agent, auctionId.toString ());
-                recordHit("accounts.%s.LOCAL_LOSS", config.account.toString('.'));
+                recordHit("accounts.%s.LOCAL_LOSS", biddingAccount.toString('.'));
                 break;
             case Auction::WinLoss::TOOLATE:
                 status = BS_TOOLATE;
                 bidder->sendTooLateMessage(agentConfig, agent, auctionInfo.auction);
-                recordHit("accounts.%s.TOOLATE", config.account.toString('.'));
+                recordHit("accounts.%s.TOOLATE", biddingAccount.toString('.'));
                 continue;
             case Auction::WinLoss::INVALID:
                 status = BS_INVALID;
                 bidder->sendBidInvalidMessage(agentConfig, agent, msg, auctionInfo.auction);
-                recordHit("accounts.%s.INVALID", config.account.toString('.'));
+                recordHit("accounts.%s.INVALID", biddingAccount.toString('.'));
                 break;
             default:
                 throw ML::Exception("logic error");
@@ -2323,8 +2399,8 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
     }
 
     if (numValidBids > 0) {
-        if (logBids) {
-            if (analytics) analytics->logBidMessage(agent, auctionId, bidsString, message.meta);
+        if (logBids && analytics) {
+            analytics->logBidMessage(agent, auctionId, bidsString, message.meta);
         }
         logMessageToAnalytics("BID", agent, auctionId, bidsString);
         ML::atomic_add(numNonEmptyBids, 1);
@@ -2350,7 +2426,7 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
 
     recordOutcome(1000.0 * bidTime,
                   "accounts.%s.bidResponseTimeMs",
-                  config.account.toString('.'));
+                  biddingAccount.toString('.'));
 
 
     if (auctionInfo.bidders.empty()) {
@@ -2363,7 +2439,6 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
         //cerr << "couldn't finish auction " << auctionInfo.auction->id
         //<< " after bid " << message << endl;
     }
-
 }
 
 
@@ -2639,8 +2714,15 @@ updateAllAgents()
             int i = newInfo->size();
             newInfo->push_back(entry);
 
+            auto& info = it->second.config;
             newInfo->agentIndex[it->first] = i;
-            newInfo->accountIndex[it->second.config->account].push_back(i);
+            newInfo->accountIndex[info->account].push_back(i);
+            if (!info->initialBudgetAccount.empty()) {
+                newInfo->initialAccountIndex[info->initialBudgetAccount].push_back(i);
+            }
+            if (!info->profitAccount.empty()) {
+                newInfo->profitAccountIndex[info->profitAccount].push_back(i);
+            }
         }
 
         if (ML::cmp_xchg(allAgents, current, newInfo.get())) {
@@ -2755,6 +2837,10 @@ void
 Router::
 configure(const std::string & agent, AgentConfig & config)
 {
+    cerr << "================================" << endl;
+    cerr << "Creating spend account for:   " << config.account.toString() << endl;
+    cerr << "================================" << endl;
+
     if (config.account.empty())
         throw ML::Exception("attempt to add an account with empty values");
 
@@ -2775,6 +2861,12 @@ configure(const std::string & agent, AgentConfig & config)
         };
 
     banker->addSpendAccount(config.account, Amount(), onDone);
+    if (!config.initialBudgetAccount.empty()) {
+        banker->addSpendAccount(config.initialBudgetAccount, Amount(), onDone);
+    }
+    if (!config.profitAccount.empty()) {
+        banker->addSpendAccount(config.profitAccount, Amount(), onDone);
+    }
 }
 
 Json::Value
@@ -2894,8 +2986,15 @@ forEachAccountAgent(const AccountKey & account,
     if (!ac) return;
 
     auto it = ac->accountIndex.find(account);
-    if (it == ac->accountIndex.end())
-        return;
+    if (it == ac->accountIndex.end()) {
+        it = ac->initialAccountIndex.find(account);
+        if (it == ac->initialAccountIndex.end()) {
+            it = ac->profitAccountIndex.find(account);
+            if (it == ac->profitAccountIndex.end()) {
+                return;
+            }
+        }
+    }
 
     for (auto jt = it->second.begin(), jend = it->second.end();
          jt != jend;  ++jt)

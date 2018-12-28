@@ -584,14 +584,25 @@ AgentConfig
 AgentConfig::
 createFromJson(const Json::Value & json)
 {
+
+    cerr << "===============================================" << endl;
+    cerr << "  Agent config from json:  " << json.toString() << endl;
+    cerr << "===============================================" << endl;
+
     AgentConfig newConfig;
     newConfig.augmentations.clear();
 
     for (auto it = json.begin(), end = json.end(); it != end;  ++it) {
-        //cerr << "parsing " << it.memberName() << " with value " << *it << endl;
+        cerr << "parsing " << it.memberName() << " with value " << *it << endl;
 
         if (it.memberName() == "account") {
             newConfig.account = AccountKey::fromJson(*it);
+        }
+        else if (it.memberName() == "initialAccount") {
+            newConfig.initialBudgetAccount = AccountKey::fromJson(*it);
+        }
+        else if (it.memberName() == "profitAccount") {
+            newConfig.profitAccount = AccountKey::fromJson(*it);
         }
         else if (it.memberName() == "name") {
             newConfig.name = it->asString();
@@ -819,6 +830,12 @@ toJson(bool includeCreatives) const
 {
     Json::Value result;
     result["account"] = account.toJson();
+    if (!initialBudgetAccount.empty()) {
+        result["initialAccount"] = initialBudgetAccount.toJson();
+    }
+    if (!profitAccount.empty()) {
+        result["profitAccount"] = profitAccount.toJson();
+    }
     result["externalId"] = externalId;
     result["external"] = external;
     result["name"] = name;

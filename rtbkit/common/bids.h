@@ -93,6 +93,15 @@ struct Bid
 
     Json::Value toJson() const;
     static Bid fromJson(ML::Parse_Context&);
+
+    /**
+     * shows what budget do we need to take money from.
+     * 1 for learning campaign's "initial" or "profit-relative" budget
+     * 2,3 for learning campaign's regular budget
+     * 1,2,3 are going to be set explicitly.
+     * By default value will be 0, and that also means that we take money from regular campaign budget.
+     */
+    int domainStage = 0;
 };
 
 /** Vector that contains a Bid entry for each imp that are available for
@@ -115,6 +124,15 @@ struct Bids : public ML::compact_vector<Bid, 4>
     Json::Value toJson() const;
     std::string toJsonStr() const;
     static Bids fromJson(const std::string& raw);
+
+    /**
+     * shows what budget do we need to take money from.
+     * 1 for learning campaign's "initial" or "profit-relative" budget
+     * 2,3 for learning campaign's regular budget
+     * 1,2,3 are going to be set explicitly.
+     * By default value will be 0, and that also means that we take money from regular campaign budget.
+     */
+    int stage = 0;
 };
 
 

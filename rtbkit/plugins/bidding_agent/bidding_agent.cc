@@ -473,6 +473,11 @@ void
 BiddingAgent::
 doBid(Id id, Bids bids, const Json::Value & jsonMeta, const WinCostModel & wcm)
 {
+
+    cerr << "  =======================================  " << endl;
+    cerr << "  Agent do bid  " << endl;
+    cerr << "  =======================================  " << endl;
+
     for (Bid& bid : bids) {
         if (bid.creativeIndex >= 0) {
             if (!bid.isNullBid()) {

@@ -36,9 +36,30 @@ forEachAccountAgent(const AccountKey & account,
     const AllAgentConfig * ac = allAgents;
     if (!ac) return;
 
+    std::cerr << "=================" << std::endl;
+    std::cerr << "  Got AllAgentConfig  " << std::endl;
+    std::cerr << "=================" << std::endl;
+    std::cerr << "  For account: " << account.toString() << std::endl;
+    std::cerr << "=================" << std::endl;
+    std::cerr << "  Agent Configs:" << std::endl;
+
+    for (auto & ae: *ac) {
+        std::cerr << " config: " << ae.name << std::endl;
+        std::cerr << " account: " << ae.config->account.toString() << std::endl;
+    }
+
+    std::cerr << "=================" << std::endl;
+
     auto it = ac->accountIndex.find(account);
-    if (it == ac->accountIndex.end())
-        return;
+    if (it == ac->accountIndex.end()) {
+        it = ac->initialAccountIndex.find(account);
+        if (it == ac->initialAccountIndex.end()) {
+            it = ac->profitAccountIndex.find(account);
+            if (it == ac->profitAccountIndex.end()) {
+                return;
+            }
+        }
+    }
 
     for (auto jt = it->second.begin(), jend = it->second.end();
          jt != jend;  ++jt)
@@ -102,8 +123,15 @@ onMessage(const std::vector<std::string> & message)
         else newConfig->emplace_back(c);
 
         int i = newConfig->size() - 1;
+        auto& conf = newConfig->back().config;
         newConfig->agentIndex[c.name] = i;
-        newConfig->accountIndex[newConfig->back().config->account].push_back(i);
+        newConfig->accountIndex[conf->account].push_back(i);
+        if (!conf->initialBudgetAccount.empty()) {
+            newConfig->initialAccountIndex[conf->initialBudgetAccount].push_back(i);
+        }
+        if (!conf->profitAccount.empty()) {
+            newConfig->profitAccountIndex[conf->profitAccount].push_back(i);
+        }
     }
     if (!found && config) {
         AgentConfigEntry ce;
@@ -112,8 +140,15 @@ onMessage(const std::vector<std::string> & message)
         newConfig->emplace_back(ce);
 
         int i = newConfig->size() - 1;
+        auto& conf = newConfig->back().config;
         newConfig->agentIndex[agent] = i;
-        newConfig->accountIndex[newConfig->back().config->account].push_back(i);
+        newConfig->accountIndex[conf->account].push_back(i);
+        if (!conf->initialBudgetAccount.empty()) {
+            newConfig->initialAccountIndex[conf->initialBudgetAccount].push_back(i);
+        }
+        if (!conf->profitAccount.empty()) {
+            newConfig->profitAccountIndex[conf->profitAccount].push_back(i);
+        }
     }
 
     if (ML::cmp_xchg(allAgents, ac, (AllAgentConfig *)newConfig.get())) {

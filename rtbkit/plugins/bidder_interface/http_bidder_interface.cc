@@ -344,7 +344,7 @@ void HttpBidderInterface::routerFormat(OpenRTB::Bid const & bid, Bid & theBid,
              *
              * This is why we are checking if the agent still exists. If not, we're skipping
              * it. This is not ideal and introduces an extra check but this is the simplest way
-             * Note that this will be trigger the "couldn't fint configuration for
+             * Note that this will be trigger the "couldn't find configuration for
              * externalId" error below. In other words, all requests that are "in flight"
              * for a configuration that has been deleted will trigger a logging message.
              * We will return a 204 for these requests
