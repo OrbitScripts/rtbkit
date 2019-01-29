@@ -2523,7 +2523,7 @@ doSubmitted(std::shared_ptr<Auction> auction)
             ML::Call_Guard guard
                 ([&] ()
                  {
-                     banker->cancelBid(response.agentConfig->account, auctionKey);
+                     banker->cancelBid(response.account, auctionKey);
                  });
 
             // No bid
