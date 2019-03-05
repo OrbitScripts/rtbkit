@@ -2042,7 +2042,7 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
 
     AuctionInfo & auctionInfo = it->second;
 
-    const auto& bids = message.bids;
+    Bids bids = message.bids;
     const auto& agent = message.agents[0];
     auto biddersIt = auctionInfo.bidders.find(agent);
     auto & config = *biddersIt->second.agentConfig;
@@ -2286,9 +2286,8 @@ doBidImpl(const BidMessage &message, const std::vector<std::string> &originalMes
         cerr << "Bids stage: " << bids.stage << endl;
         cerr << "========================================" << endl;
 
+        bids[i].account = RTBKIT::AccountKey(biddingAccount); // set particular account for a bid
 
-        bid.account = biddingAccount; // set particular account for a bid
-        
         recordCount(bid.price.value, "cummulatedBidPrice");
         recordCount(price.value, "cummulatedAuthorizedPrice");
 
