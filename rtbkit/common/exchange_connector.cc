@@ -130,6 +130,8 @@ getBidValidity (const Bid  & bid,
     BidValidity result;
     result.setValidBid();
 
+// UrbanFIX: ignore bidfloor
+#if 0
     std::string reason;
 
     if (imp[spotIndex].bidfloor.val != 0.0  && (!imp[spotIndex].bidfloorcur.empty())) {
@@ -146,10 +148,10 @@ getBidValidity (const Bid  & bid,
                result.setInvalidBid(reason);
              }
     }
+#endif
 
     return result;
-
- }
+}
 
 ExchangeConnector::ExchangeCompatibility
 ExchangeConnector::
